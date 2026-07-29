@@ -1,7 +1,8 @@
 package com.epam.gym.dao;
 
 import com.epam.gym.model.Trainee;
-import com.epam.gym.storage.TraineeStorage;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -13,51 +14,61 @@ import java.util.Optional;
 @Slf4j
 public class TraineeDaoImpl implements TraineeDao {
 
-    private TraineeStorage traineeStorage;
+    private EntityManager entityManager;
 
     @Autowired
-    public void setTraineeStorage(TraineeStorage traineeStorage) {
-        this.traineeStorage = traineeStorage;
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
     @Override
     public Trainee create(Trainee trainee) {
-        traineeStorage.getStorage().put(trainee.getId(), trainee);
+        entityManager.persist(trainee);
         log.info("Trainee created with id {}", trainee.getId());
         return trainee;
     }
 
     @Override
     public Trainee update(Trainee trainee) {
-        traineeStorage.getStorage().put(trainee.getId(), trainee);
-        log.info("Trainee updated with id {}", trainee.getId());
-        return trainee;
+        Trainee merged = entityManager.merge(trainee);
+        log.info("Trainee updated with id {}", merged.getId());
+        return merged;
     }
 
     @Override
-    public void delete(Long id) {
-        traineeStorage.getStorage().remove(id);
-        log.info("Trainee deleted with id {}", id);
+    public void delete(Trainee trainee) {
+        entityManager.remove(entityManager.contains(trainee) ? trainee : entityManager.merge(trainee));
+        log.info("Trainee deleted with id {}", trainee.getId());
     }
 
     @Override
     public Optional<Trainee> findById(Long id) {
         log.debug("Fetching trainee with id {}", id);
-        Optional<Trainee> result = Optional.ofNullable(traineeStorage.getStorage().get(id));
-        if (result.isEmpty()) {
+        Trainee trainee = entityManager.find(Trainee.class, id);
+        if (trainee == null) {
             log.warn("Trainee with id {} not found", id);
         }
-        return result;
+        return Optional.ofNullable(trainee);
+    }
+
+    @Override
+    public Optional<Trainee> findByUsername(String username) {
+        log.debug("Fetching trainee with username {}", username);
+        TypedQuery<Trainee> query = entityManager.createQuery(
+                "SELECT t FROM Trainee t WHERE t.user.username = :username", Trainee.class);
+        query.setParameter("username", username);
+        List<Trainee> result = query.getResultList();
+        if (result.isEmpty()) {
+            log.warn("Trainee with username {} not found", username);
+            return Optional.empty();
+        }
+        return Optional.of(result.get(0));
     }
 
     @Override
     public List<Trainee> findAll() {
-        log.debug("Fetching all trainees, count: {}", traineeStorage.getStorage().size());
-        return List.copyOf(traineeStorage.getStorage().values());
-    }
-
-    @Override
-    public Long nextId() {
-        return traineeStorage.nextId();
+        log.debug("Fetching all trainees");
+        TypedQuery<Trainee> query = entityManager.createQuery("SELECT t FROM Trainee t", Trainee.class);
+        return query.getResultList();
     }
 }

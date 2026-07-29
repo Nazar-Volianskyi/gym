@@ -9,7 +9,7 @@ public interface TrainerDao {
     Trainer create(Trainer trainer);
     Trainer update(Trainer trainer);
     Optional<Trainer> findById(Long id);
+    Optional<Trainer> findByUsername(String username);
     List<Trainer> findAll();
-    Long nextId();
-
+    List<Trainer> findTrainersNotAssignedToTrainee(String traineeUsername);
 }

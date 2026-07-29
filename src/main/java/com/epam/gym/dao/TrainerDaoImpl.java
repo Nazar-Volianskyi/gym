@@ -1,7 +1,8 @@
 package com.epam.gym.dao;
 
 import com.epam.gym.model.Trainer;
-import com.epam.gym.storage.TrainerStorage;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -13,45 +14,66 @@ import java.util.Optional;
 @Slf4j
 public class TrainerDaoImpl implements TrainerDao {
 
-    private TrainerStorage trainerStorage;
+    private EntityManager entityManager;
 
     @Autowired
-    public void setTrainerStorage(TrainerStorage trainerStorage) {
-        this.trainerStorage = trainerStorage;
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
     @Override
     public Trainer create(Trainer trainer) {
-        trainerStorage.getStorage().put(trainer.getId(), trainer);
+        entityManager.persist(trainer);
         log.info("Trainer created with id {}", trainer.getId());
         return trainer;
     }
 
     @Override
     public Trainer update(Trainer trainer) {
-        trainerStorage.getStorage().put(trainer.getId(), trainer);
-        log.info("Trainer updated with id {}", trainer.getId());
-        return trainer;
+        Trainer merged = entityManager.merge(trainer);
+        log.info("Trainer updated with id {}", merged.getId());
+        return merged;
     }
 
     @Override
     public Optional<Trainer> findById(Long id) {
-        log.debug("Fetching trainer by id {}", id);
-        Optional<Trainer> result = Optional.ofNullable(trainerStorage.getStorage().get(id));
-        if (result.isEmpty()) {
+        log.debug("Fetching trainer with id {}", id);
+        Trainer trainer = entityManager.find(Trainer.class, id);
+        if (trainer == null) {
             log.warn("Trainer with id {} not found", id);
         }
-        return result;
+        return Optional.ofNullable(trainer);
+    }
+
+    @Override
+    public Optional<Trainer> findByUsername(String username) {
+        log.debug("Fetching trainer with username {}", username);
+        TypedQuery<Trainer> query = entityManager.createQuery(
+                "SELECT t FROM Trainer t WHERE t.user.username = :username", Trainer.class);
+        query.setParameter("username", username);
+        List<Trainer> result = query.getResultList();
+        if (result.isEmpty()) {
+            log.warn("Trainer with username {} not found", username);
+            return Optional.empty();
+        }
+        return Optional.of(result.get(0));
     }
 
     @Override
     public List<Trainer> findAll() {
-        log.debug("Fetching all trainers, count {}", trainerStorage.getStorage().size());
-        return List.copyOf(trainerStorage.getStorage().values());
+        log.debug("Fetching all trainers");
+        TypedQuery<Trainer> query = entityManager.createQuery("SELECT t FROM Trainer t", Trainer.class);
+        return query.getResultList();
     }
 
     @Override
-    public Long nextId() {
-        return trainerStorage.nextId();
+    public List<Trainer> findTrainersNotAssignedToTrainee(String traineeUsername) {
+        log.debug("Fetching trainers not assigned to trainee with username {}", traineeUsername);
+        TypedQuery<Trainer> query = entityManager.createQuery(
+                "SELECT tr FROM Trainer tr WHERE tr NOT IN " +
+                        "(SELECT t2 FROM Trainee te JOIN te.trainers t2 WHERE te.user.username = :username)",
+                Trainer.class);
+        query.setParameter("username", traineeUsername);
+        return query.getResultList();
     }
 }

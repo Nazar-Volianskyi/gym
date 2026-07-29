@@ -8,10 +8,11 @@ import java.util.Optional;
 public interface TraineeDao {
     Trainee create(Trainee trainee);
     Trainee update(Trainee trainee);
-    void delete(Long id);
+    void delete(Trainee trainee);
     Optional<Trainee> findById(Long id);
+    Optional<Trainee> findByUsername(String username);
     List<Trainee> findAll();
-    Long nextId();
+
 
 
 }

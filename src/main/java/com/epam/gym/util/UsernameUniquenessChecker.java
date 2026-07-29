@@ -22,10 +22,7 @@ public class UsernameUniquenessChecker {
     }
 
     public boolean exists(String username) {
-        boolean inTrainees = traineeDao.findAll().stream()
-                .anyMatch(t -> t.getUsername().equals(username));
-        boolean inTrainers = trainerDao.findAll().stream()
-                .anyMatch(t -> t.getUsername().equals(username));
-        return inTrainees || inTrainers;
+        return traineeDao.findByUsername(username).isPresent()
+                || trainerDao.findByUsername(username).isPresent();
     }
 }
