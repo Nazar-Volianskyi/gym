@@ -3,6 +3,7 @@ package com.epam.gym.service;
 import com.epam.gym.dao.TraineeDao;
 import com.epam.gym.dao.TrainerDao;
 import com.epam.gym.dao.TrainingDao;
+import com.epam.gym.exception.ConflictException;
 import com.epam.gym.exception.EntityNotFoundException;
 import com.epam.gym.model.Trainee;
 import com.epam.gym.model.Trainer;
@@ -55,6 +56,12 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public Trainee create(Trainee trainee) {
+        String firstName = trainee.getUser().getFirstName();
+        String lastName = trainee.getUser().getLastName();
+        if (trainerDao.existsByFullName(firstName, lastName)) {
+            throw new ConflictException(
+                    "%s %s is already registered as a trainer".formatted(firstName, lastName));
+        }
         userProfileInitializer.initialize(trainee.getUser());
         Trainee created = traineeDao.create(trainee);
         log.info("Created trainee profile with username {}", created.getUser().getUsername());
@@ -63,15 +70,15 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional(readOnly = true)
-    public Trainee findByUsername(String username, String password) {
-        log.debug("Fetching trainee profile for username {}", username);
-        return authenticationService.authenticateTrainee(username, password);
+    public Trainee findByUsername(String username) {
+        return traineeDao.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("Trainee", username));
     }
 
     @Override
     @Transactional
-    public void changePassword(String username, String password, String newPassword) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        Trainee trainee = authenticationService.authenticateTrainee(username, oldPassword);
         trainee.getUser().setPassword(newPassword);
         traineeDao.update(trainee);
         log.info("Password changed for trainee username {}", username);
@@ -79,12 +86,13 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public Trainee update(String username, String password, Trainee updatedData) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+    public Trainee update(String username, Trainee updatedData, boolean isActive) {
+        Trainee trainee = findByUsername(username);
         trainee.getUser().setFirstName(updatedData.getUser().getFirstName());
         trainee.getUser().setLastName(updatedData.getUser().getLastName());
         trainee.setDateOfBirth(updatedData.getDateOfBirth());
         trainee.setAddress(updatedData.getAddress());
+        trainee.getUser().setActive(isActive);
         Trainee updated = traineeDao.update(trainee);
         log.info("Updated trainee profile for username {}", username);
         return updated;
@@ -92,11 +100,11 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public void setActiveStatus(String username, String password, boolean isActive) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+    public void setActiveStatus(String username, boolean isActive) {
+        Trainee trainee = findByUsername(username);
         if (trainee.getUser().isActive() == isActive) {
-            log.warn("Trainee {} is already {}", username, isActive ? "active" : "inactive");
-            return;
+            throw new ConflictException(
+                    "Trainee %s is already %s".formatted(username, isActive ? "active" : "inactive"));
         }
         trainee.getUser().setActive(isActive);
         traineeDao.update(trainee);
@@ -105,33 +113,34 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public void delete(String username, String password) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+    public void delete(String username) {
+        Trainee trainee = findByUsername(username);
         traineeDao.delete(trainee);
         log.info("Deleted trainee profile with username {}", username);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Training> getTrainings(String username, String password, LocalDate fromDate, LocalDate toDate,
-                                       String trainingTypeName) {
-        authenticationService.authenticateTrainee(username, password);
-        return trainingDao.findTraineeTrainings(username, fromDate, toDate, trainingTypeName);
+    public List<Training> getTrainings(String username, LocalDate fromDate, LocalDate toDate,
+                                       String trainerName, String trainingTypeName) {
+        findByUsername(username);
+        return trainingDao.findTraineeTrainings(username, fromDate, toDate, trainerName, trainingTypeName);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Trainer> getUnassignedTrainers(String username, String password) {
-        authenticationService.authenticateTrainee(username, password);
+    public List<Trainer> getUnassignedTrainers(String username) {
+        findByUsername(username);
         return trainerDao.findTrainersNotAssignedToTrainee(username);
     }
 
     @Override
     @Transactional
-    public Trainee updateTrainersList(String username, String password, List<Long> trainerIds) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
-        List<Trainer> trainers = trainerIds.stream()
-                .map(id -> trainerDao.findById(id).orElseThrow(() -> new EntityNotFoundException("Trainer", id)))
+    public Trainee updateTrainersList(String username, List<String> trainerUsernames) {
+        Trainee trainee = findByUsername(username);
+        List<Trainer> trainers = trainerUsernames.stream()
+                .map(trainerUsername -> trainerDao.findByUsername(trainerUsername)
+                        .orElseThrow(() -> new EntityNotFoundException("Trainer", trainerUsername)))
                 .toList();
         trainee.setTrainers(trainers);
         Trainee updated = traineeDao.update(trainee);

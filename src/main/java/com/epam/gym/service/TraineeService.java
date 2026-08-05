@@ -9,13 +9,13 @@ import java.util.List;
 
 public interface TraineeService {
     Trainee create(Trainee trainee);
-    Trainee findByUsername(String username, String password);
-    void changePassword(String username, String password, String newPassword);
-    Trainee update(String username, String password, Trainee updatedData);
-    void setActiveStatus(String username, String password, boolean isActive);
-    void delete(String username, String password);
-    List<Training> getTrainings(String username, String password, LocalDate fromDate, LocalDate toDate,
-                                String trainingTypeName);
-    List<Trainer> getUnassignedTrainers(String username, String password);
-    Trainee updateTrainersList(String username, String password, List<Long> trainerIds);
+    Trainee findByUsername(String username);
+    void changePassword(String username, String oldPassword, String newPassword);
+    Trainee update(String username, Trainee updatedData, boolean isActive);
+    void setActiveStatus(String username, boolean isActive);
+    void delete(String username);
+    List<Training> getTrainings(String username, LocalDate fromDate, LocalDate toDate,
+                                String trainerName, String trainingTypeName);
+    List<Trainer> getUnassignedTrainers(String username);
+    Trainee updateTrainersList(String username, List<String> trainerUsernames);
 }

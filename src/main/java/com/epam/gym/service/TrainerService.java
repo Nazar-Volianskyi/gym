@@ -7,10 +7,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface TrainerService {
-    Trainer create(Trainer trainer);
-    Trainer findByUsername(String username, String password);
-    void changePassword(String username, String password, String newPassword);
-    Trainer update(String username, String password, Trainer updatedData);
-    void setActiveStatus(String username, String password, boolean isActive);
-    List<Training> getTrainings(String username, String password, LocalDate fromDate, LocalDate toDate);
+    Trainer create(String firstName, String lastName, String specialization);
+    Trainer findByUsername(String username);
+    void changePassword(String username, String oldPassword, String newPassword);
+    Trainer update(String username, Trainer updatedData, boolean isActive);
+    void setActiveStatus(String username, boolean isActive);
+    List<Training> getTrainings(String username, LocalDate fromDate, LocalDate toDate, String traineeName);
 }

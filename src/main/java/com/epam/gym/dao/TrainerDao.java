@@ -12,4 +12,5 @@ public interface TrainerDao {
     Optional<Trainer> findByUsername(String username);
     List<Trainer> findAll();
     List<Trainer> findTrainersNotAssignedToTrainee(String traineeUsername);
+    boolean existsByFullName(String firstName, String lastName);
 }

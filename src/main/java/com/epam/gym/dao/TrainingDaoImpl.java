@@ -39,7 +39,7 @@ public class TrainingDaoImpl implements TrainingDao {
 
     @Override
     public Optional<Training> findById(Long id) {
-        log.debug("Fetching training with id {}", id);
+        log.info("Fetching training with id {}", id);
         Training training = entityManager.find(Training.class, id);
         if (training == null) {
             log.warn("Training with id {} not found", id);
@@ -49,15 +49,15 @@ public class TrainingDaoImpl implements TrainingDao {
 
     @Override
     public List<Training> findAll() {
-        log.debug("Fetching all trainings");
+        log.info("Fetching all trainings");
         TypedQuery<Training> query = entityManager.createQuery("SELECT t FROM Training t", Training.class);
         return query.getResultList();
     }
 
     @Override
     public List<Training> findTraineeTrainings(String traineeUsername, LocalDate fromDate,
-                                               LocalDate toDate, String trainingTypeName) {
-        log.debug("Fetching trainee trainings for username {} with criteria", traineeUsername);
+                                               LocalDate toDate, String trainerUsername, String trainingTypeName) {
+        log.info("Fetching trainee trainings for username {} with criteria", traineeUsername);
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Training> query = cb.createQuery(Training.class);
         Root<Training> training = query.from(Training.class);
@@ -71,7 +71,9 @@ public class TrainingDaoImpl implements TrainingDao {
         if (toDate != null) {
             predicates.add(cb.lessThanOrEqualTo(training.get("trainingDate"), toDate));
         }
-
+        if (trainerUsername != null && !trainerUsername.isBlank()) {
+            predicates.add(cb.equal(training.get("trainer").get("user").get("username"), trainerUsername));
+        }
         if (trainingTypeName != null && !trainingTypeName.isBlank()) {
             predicates.add(cb.equal(training.get("trainingType").get("trainingTypeName"), trainingTypeName));
         }
@@ -79,14 +81,14 @@ public class TrainingDaoImpl implements TrainingDao {
         query.where(predicates.toArray(new Predicate[0]));
 
         List<Training> result = entityManager.createQuery(query).getResultList();
-        log.debug("Found {} trainings for trainee {}", result.size(), traineeUsername);
+        log.info("Found {} trainings for trainee {}", result.size(), traineeUsername);
         return result;
     }
 
     @Override
     public List<Training> findTrainerTrainings(String trainerUsername, LocalDate fromDate,
-                                               LocalDate toDate) {
-        log.debug("Fetching trainer trainings for username {} with criteria", trainerUsername);
+                                               LocalDate toDate, String traineeUsername) {
+        log.info("Fetching trainer trainings for username {} with criteria", trainerUsername);
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Training> query = cb.createQuery(Training.class);
         Root<Training> training = query.from(Training.class);
@@ -104,11 +106,13 @@ public class TrainingDaoImpl implements TrainingDao {
             predicates.add(cb.lessThanOrEqualTo(
                     training.get("trainingDate"), toDate));
         }
-
+        if (traineeUsername != null && !traineeUsername.isBlank()) {
+            predicates.add(cb.equal(training.get("trainee").get("user").get("username"), traineeUsername));
+        }
 
         query.where(predicates.toArray(new Predicate[0]));
         List<Training> result = entityManager.createQuery(query).getResultList();
-        log.debug("Found {} trainings for trainer {}", result.size(), trainerUsername);
+        log.info("Found {} trainings for trainer {}", result.size(), trainerUsername);
         return result;
     }
 }

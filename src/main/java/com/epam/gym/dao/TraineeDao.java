@@ -12,7 +12,5 @@ public interface TraineeDao {
     Optional<Trainee> findById(Long id);
     Optional<Trainee> findByUsername(String username);
     List<Trainee> findAll();
-
-
-
+    boolean existsByFullName(String firstName, String lastName);
 }

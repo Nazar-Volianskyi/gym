@@ -23,7 +23,7 @@ public class TrainingTypeDaoImpl implements TrainingTypeDao {
 
     @Override
     public Optional<TrainingType> findByName(String name) {
-        log.debug("Fetching training type with name {}", name);
+        log.info("Fetching training type with name {}", name);
         TypedQuery<TrainingType> query = entityManager.createQuery(
                 "SELECT tt FROM TrainingType tt WHERE tt.trainingTypeName = :name", TrainingType.class);
         query.setParameter("name", name);
@@ -37,7 +37,7 @@ public class TrainingTypeDaoImpl implements TrainingTypeDao {
 
     @Override
     public List<TrainingType> findAll() {
-        log.debug("Fetching all training types");
+        log.info("Fetching all training types");
         TypedQuery<TrainingType> query = entityManager.createQuery("SELECT tt FROM TrainingType tt", TrainingType.class);
         return query.getResultList();
     }

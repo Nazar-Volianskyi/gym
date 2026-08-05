@@ -52,7 +52,6 @@ class AuthenticationServiceTest {
     void authenticateTrainee_shouldReturnTrainee_whenCredentialsMatch() {
         Trainee trainee = buildTrainee("Nazar.Volianskyi", "secret123");
         when(traineeDao.findByUsername("Nazar.Volianskyi")).thenReturn(Optional.of(trainee));
-
         Trainee result = authenticationService.authenticateTrainee("Nazar.Volianskyi", "secret123");
 
         assertEquals(trainee, result);
@@ -63,23 +62,23 @@ class AuthenticationServiceTest {
         when(traineeDao.findByUsername("Noname")).thenReturn(Optional.empty());
 
         assertThrows(AuthenticationException.class,
-                () -> authenticationService.authenticateTrainee("Noname", "any"));
+                () -> authenticationService.authenticateTrainee("Noname", "password123"));
     }
 
     @Test
     void authenticateTrainee_shouldThrow_whenPasswordDoesNotMatch() {
-        Trainee trainee = buildTrainee("Nazar.Volianskyi", "secret123");
+        Trainee trainee = buildTrainee("Nazar.Volianskyi", "password123");
         when(traineeDao.findByUsername("Nazar.Volianskyi")).thenReturn(Optional.of(trainee));
 
         assertThrows(AuthenticationException.class,
-                () -> authenticationService.authenticateTrainee("Nazar.Volianskyi", "wrongPassword"));
+                () -> authenticationService.authenticateTrainee("Nazar.Volianskyi", "password"));
     }
 
     @Test
     void authenticateTrainer_shouldReturnTrainer_whenCredentialsMatch() {
-        Trainer trainer = buildTrainer("Anna.Kovalenko", "pass456");
-        when(trainerDao.findByUsername("Anna.Kovalenko")).thenReturn(Optional.of(trainer));
-        Trainer result = authenticationService.authenticateTrainer("Anna.Kovalenko", "pass456");
+        Trainer trainer = buildTrainer("Nazar.Volianskyi", "pass456");
+        when(trainerDao.findByUsername("Nazar.Volianskyi")).thenReturn(Optional.of(trainer));
+        Trainer result = authenticationService.authenticateTrainer("Nazar.Volianskyi", "pass456");
 
         assertEquals(trainer, result);
     }
@@ -93,9 +92,9 @@ class AuthenticationServiceTest {
 
     @Test
     void authenticateTrainer_shouldThrow_whenPasswordDoesNotMatch() {
-        Trainer trainer = buildTrainer("Anna.Kovalenko", "pass456");
-        when(trainerDao.findByUsername("Anna.Kovalenko")).thenReturn(Optional.of(trainer));
+        Trainer trainer = buildTrainer("Nazar.Volianskyi", "pass456");
+        when(trainerDao.findByUsername("Nazar.Volianskyi")).thenReturn(Optional.of(trainer));
         assertThrows(AuthenticationException.class,
-                () -> authenticationService.authenticateTrainer("Anna.Kovalenko", "wrongPassword"));
+                () -> authenticationService.authenticateTrainer("Nazar.Volianskyi", "wrongPassword"));
     }
 }
